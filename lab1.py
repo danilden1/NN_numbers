@@ -1,6 +1,6 @@
 # Plot ad hoc mnist instances
 from keras.datasets import mnist
-
+import tensorflow as tf
 from matplotlib import pyplot
 from matplotlib import image
 from os import listdir
@@ -39,7 +39,7 @@ def delete_background(img, threshold):
 	for i in range(0, img.shape[0]):
 		for j in range(0, img.shape[1]):
 			if img[i, j] < threshold:
-				img[i, j] = 0.0
+				img[i, j] = 0
 
 	return img
 
@@ -47,62 +47,35 @@ def delete_background(img, threshold):
 data_list = list()
 
 def load_data():
-	i = 0
 	for filename in listdir("data"):
 		img_data = Image.open("data/" + filename)
 		img_resize = img_data.resize((28, 28))
 		img_l = img_resize.convert(mode="L")
 		img_inverse = PIL.ImageOps.invert(img_l)
 		img_arr = numpy.array(img_inverse)
-
-		# normalize inputs from 0-255 to 0-1
-		img_arr = img_arr / 255
-
-		img_arr = delete_background(img_arr, 0.5)
-
-		# one hot encode outputs
-		#img_arr = np_utils.to_categorical(img_arr)
-
-		print("> loaded %s %s %s" % (filename, img_arr.shape, img_arr.dtype))
-		data_list.append(img_arr)
-		#data_list[i].show()
-		#i = i + 1
+		img_back = delete_background(img_arr, 120)
 
 
-	#data = Image.open('data/image_0.jpg')
-	#data = image.imread('data/image_0.jpg')
-
-	#print()
-	#print(data.size)
-	#data_resize = data.resize((28, 28))
-
-	#print(data_resize.size)
-	#data_resize.show()
+		data_list.append(img_back)
 
 
+		#print("> loaded %s %s %s" % (filename, img_arr.shape, img_arr.dtype))
 
-
-
-# load data
-
-
-
+	for i in range(0, 10):
+		pyplot.subplot(5, 2, i + 1)
+		pyplot.imshow(data_list[i], cmap=pyplot.get_cmap('gray'))
 
 
 
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
-load_data()
 
-pyplot.subplot(221)
-pyplot.imshow(data_list[0], cmap=pyplot.get_cmap('gray'))
-pyplot.subplot(222)
-pyplot.imshow(data_list[1], cmap=pyplot.get_cmap('gray'))
-pyplot.subplot(223)
-pyplot.imshow(X_train[0], cmap=pyplot.get_cmap('gray'))
-pyplot.subplot(224)
-pyplot.imshow(X_train[1], cmap=pyplot.get_cmap('gray'))
+
+
+#pyplot.imshow(X_train[0], cmap=pyplot.get_cmap('gray'))
+#pyplot.subplot(224)
+#pyplot.imshow(X_train[1], cmap=pyplot.get_cmap('gray'))
 # show the plot
-pyplot.show()
+
 
 
 
@@ -115,15 +88,12 @@ X_test = X_test.reshape(X_test.shape[0], num_pixels).astype('float32')
 print(X_train.shape)
 # normalize inputs from 0-255 to 0-1
 X_train = X_train / 255
-X_test = X_test / 255
+
 
 # one hot encode outputs
 y_train = np_utils.to_categorical(y_train)
 y_test = np_utils.to_categorical(y_test)
 num_classes = y_test.shape[1]
-data_arr = numpy.asarray(data_list)
-
-
 
 
 print("origin data:")
@@ -132,13 +102,30 @@ print(X_test[1].dtype)
 print("my data:")
 
 
-
-
 # build the model
 model = baseline_model()
 # Fit the model
 model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200, verbose=2)
+
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=0)
 print("Baseline Error: %.2f%%" % (100-scores[1]*100))
+
+load_data()
+data_x = numpy.asarray(data_list)
+data_y = numpy.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+num_pixels_my = data_x.shape[1] * data_x.shape[2]
+data_x = data_x.reshape(data_x.shape[0], num_pixels_my).astype('float32')
+
+data_x = data_x / 255
+
+data_y = np_utils.to_categorical(data_y)
+print("my model")
+scores = model.evaluate(data_x, data_y)
+print("Baseline Error: %.2f%%" % (100-scores[1]*100))
+pyplot.show()
+
+
+
 
