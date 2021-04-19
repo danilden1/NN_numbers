@@ -1,91 +1,64 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Activation, BatchNormalization, AveragePooling2D
-from tensorflow.keras.optimizers import SGD, RMSprop, Adam
-import tensorflow_datasets as tfds  # pip install tensorflow-datasets
-import tensorflow as tf
-import logging
-import numpy as np
-import time
-from tensorflow.keras.datasets import mnist
-from matplotlib import pyplot
-
-(trainX, trainy), (testX, testy) = mnist.load_data()
-print("Train: X=%s, y=%s" % (trainX.shape, trainy.shape))
-print("Test: X=%s, y=%s" % (testX.shape, testy.shape))
-
-for i  in range(9):
-   pyplot.subplot(330 + 1 + i)
-   pyplot.imshow(trainX[i], cmap=pyplot.get_cmap('gray'))
-
-pyplot.show()
-#tf.logging.set_verbosity(tf.logging.ERROR)
-#tf.get_logger().setLevel(logging.ERROR)
-
-def mnist_make_model(image_w: int, image_h: int):
-   # Neural network model
-   model = Sequential()
-   model.add(Dense(784, activation='relu', input_shape=(image_w*image_h,)))
-   model.add(Dense(10, activation='softmax'))
-   model.compile(loss='categorical_crossentropy', optimizer=RMSprop(), metrics=['accuracy'])
-   return model
-
-def mnist_mlp_train(model):
-   (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-   # x_train: 60000x28x28 array, x_test: 10000x28x28 array
-   image_size = x_train.shape[1]
-   train_data = x_train.reshape(x_train.shape[0], image_size*image_size)
-   test_data = x_test.reshape(x_test.shape[0], image_size*image_size)
-   train_data = train_data.astype('float32')
-   test_data = test_data.astype('float32')
-   train_data /= 255.0
-   test_data /= 255.0
-   # encode the labels - we have 10 output classes
-   # 3 -> [0 0 0 1 0 0 0 0 0 0], 5 -> [0 0 0 0 0 1 0 0 0 0]
-   num_classes = 10
-   train_labels_cat = keras.utils.to_categorical(y_train, num_classes)
-   test_labels_cat = keras.utils.to_categorical(y_test, num_classes)
-   print("Training the network...")
-   t_start = time.time()
-   # Start training the network
-   model.fit(train_data, train_labels_cat, epochs=8, batch_size=64,
-             verbose=1, validation_data=(test_data, test_labels_cat))
+# Plot ad hoc mnist instances
+from keras.datasets import mnist
+import matplotlib.pyplot as plt
+# load (downloaded if needed) the MNIST dataset
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+# plot 4 images as gray scale
+plt.subplot(221)
+plt.imshow(X_train[0], cmap=plt.get_cmap('gray'))
+plt.subplot(222)
+plt.imshow(X_train[1], cmap=plt.get_cmap('gray'))
+plt.subplot(223)
+plt.imshow(X_train[2], cmap=plt.get_cmap('gray'))
+plt.subplot(224)
+plt.imshow(X_train[3], cmap=plt.get_cmap('gray'))
+# show the plot
+plt.show()
 
 
+import numpy
+from keras.datasets import mnist
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.utils import np_utils
 
+# fix random seed for reproducibility
+seed = 7
+numpy.random.seed(seed)
 
-model = Sequential()
-model.add(Dense(2, input_dim=2, activation='relu'))
-model.add(Dense(1, activation='sigmoid'))
-model.compile(loss='binary_crossentropy', optimizer=SGD(lr=0.1))
+# define baseline model
+def baseline_model():
+	# create model
+	model = Sequential()
+	model.add(Dense(num_pixels, input_dim=num_pixels, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(num_classes, kernel_initializer='normal', activation='softmax'))
+	# Compile model
+	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	return model
 
-print(model.summary())
+# load data
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
 
-X = np.array([[0,0], [0,1], [1,0], [1,1]])
-y = np.array([[0], [1], [1], [0]])
-model.fit(X, y, batch_size=1, epochs=1000, verbose=0)
+# flatten 28*28 images to a 784 vector for each image
+num_pixels = X_train.shape[1] * X_train.shape[2]
+X_train = X_train.reshape(X_train.shape[0], num_pixels).astype('float32')
+X_test = X_test.reshape(X_test.shape[0], num_pixels).astype('float32')
 
-print("Network test:")
-print("XOR(0,0):", model.predict_proba(np.array([[0, 0]])))
-print("XOR(0,1):", model.predict_proba(np.array([[0, 1]])))
-print("XOR(1,0):", model.predict_proba(np.array([[1, 0]])))
-print("XOR(1,1):", model.predict_proba(np.array([[1, 1]])))
+# normalize inputs from 0-255 to 0-1
+X_train = X_train / 255
+X_test = X_test / 255
 
-## Parameters layer 1
-W1 = model.get_weights()[0]
-b1 = model.get_weights()[1]
-## Parameters layer 2
-W2 = model.get_weights()[2]
-b2 = model.get_weights()[3]
+# one hot encode outputs
+y_train = np_utils.to_categorical(y_train)
+y_test = np_utils.to_categorical(y_test)
+num_classes = y_test.shape[1]
 
-print("W1:", W1)
-print("b1:", b1)
-print("W2:", W2)
-print("b2:", b2)
-print()
+# build the model
+model = baseline_model()
+# Fit the model
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200, verbose=2)
+# Final evaluation of the model
+scores = model.evaluate(X_test, y_test, verbose=0)
+print("Baseline Error: %.2f%%" % (100-scores[1]*100))
 
