@@ -31,7 +31,15 @@ numpy.random.seed(seed)
 def baseline_model():
 	# create model
 	model = Sequential()
+	#6-уровневая сеть 784-50-100-500-1000-10-10
 	model.add(Dense(num_pixels, input_dim=num_pixels, kernel_initializer='normal', activation='relu'))
+	"""
+	model.add(Dense(50, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(100, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(500, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(1000, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(10, kernel_initializer='normal', activation='relu'))
+	"""
 	model.add(Dense(num_classes, kernel_initializer='normal', activation='softmax'))
 	# Compile model
 	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -42,6 +50,8 @@ def delete_background(img, threshold):
 		for j in range(0, img.shape[1]):
 			if img[i, j] < threshold:
 				img[i, j] = 0
+			else:
+				img[i, j] = 255
 
 	return img
 
@@ -62,7 +72,7 @@ def load_data():
 		data_list.append(img_back)
 
 
-		#print("> loaded %s %s %s" % (filename, img_arr.shape, img_arr.dtype))
+		print("> loaded %s %s %s" % (filename, img_arr.shape, img_arr.dtype))
 
 	for i in range(0, 10):
 		pyplot.subplot(5, 2, i + 1)
@@ -108,7 +118,7 @@ print("my data:")
 # build the model
 model = baseline_model()
 # Fit the model
-model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=64, verbose=1)
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10 , batch_size=20, verbose=1)
 
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=0)
