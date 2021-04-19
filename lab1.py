@@ -6,6 +6,7 @@ from matplotlib import image
 from os import listdir
 #import opencv as cv
 from PIL import Image
+from skimage.morphology import dilation
 import PIL.ImageOps
 # load (downloaded if needed) the MNIST dataset
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -54,6 +55,7 @@ def load_data():
 		img_inverse = PIL.ImageOps.invert(img_l)
 		img_arr = numpy.array(img_inverse)
 		img_back = delete_background(img_arr, 120)
+		img_back = dilation(img_back)
 
 
 		data_list.append(img_back)
@@ -105,7 +107,7 @@ print("my data:")
 # build the model
 model = baseline_model()
 # Fit the model
-model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200, verbose=2)
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=1, batch_size=200, verbose=2)
 
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=0)
@@ -123,7 +125,14 @@ data_x = data_x / 255
 data_y = np_utils.to_categorical(data_y)
 print("my model")
 scores = model.evaluate(data_x, data_y)
+prediction = model.predict(data_x)
 print("Baseline Error: %.2f%%" % (100-scores[1]*100))
+for i in range(0, 10):
+	print(i, ": ", end="")
+	for j in range(0, 10):
+		print("%.2f%%" % (prediction[i, j] * 100), " ", end="")
+	print()
+#print(prediction)
 pyplot.show()
 
 
