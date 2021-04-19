@@ -8,6 +8,7 @@ from os import listdir
 from PIL import Image
 from skimage.morphology import dilation
 import PIL.ImageOps
+from prettytable import PrettyTable
 # load (downloaded if needed) the MNIST dataset
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 # plot 4 images as gray scale
@@ -107,7 +108,7 @@ print("my data:")
 # build the model
 model = baseline_model()
 # Fit the model
-model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=1, batch_size=200, verbose=2)
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=64, verbose=1)
 
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=0)
@@ -124,15 +125,42 @@ data_x = data_x / 255
 
 data_y = np_utils.to_categorical(data_y)
 print("my model")
-scores = model.evaluate(data_x, data_y)
+#scores = model.evaluate(data_x, data_y)
 prediction = model.predict(data_x)
-print("Baseline Error: %.2f%%" % (100-scores[1]*100))
+
+t = PrettyTable(['Numb', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+#print("Baseline Error: %.2f%%" % (100-scores[1]*100))
 for i in range(0, 10):
-	print(i, ": ", end="")
+	#print(i, ": ", end="")
+	#for j in range(0, 10):
+	#		print("%.2f%%" % (prediction[i, j] * 100), " ", end="")
+	#print()
+	pred = list()
 	for j in range(0, 10):
-		print("%.2f%%" % (prediction[i, j] * 100), " ", end="")
-	print()
-#print(prediction)
+		pred.append("%.2f%%" % (prediction[i,j] * 100))
+	t.add_row([i, pred[0],
+			   pred[1],
+			   pred[2],
+			   pred[3],
+			   pred[4],
+			   pred[5],
+			   pred[6],
+			   pred[7],
+			   pred[8],
+			   pred[9],])
+
+
+print(t)
+
+for i in range(0, 10):
+	j = i
+	if prediction[i, j] > 0.50:
+		print(i, ": SUCCESS ", "%.2f%%" % (prediction[i, j] * 100))
+	else:
+		print(i, ": FUUUUCK ", "%.2f%%" % (prediction[i, j] * 100))
+
+
+
 pyplot.show()
 
 
